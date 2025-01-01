@@ -26,4 +26,9 @@ export class AppController {
     await this.redisService.set(RedisPrefix.PRODUCT, `${key}:${this.uniqueId++}`, value);
     return `${key}:${value} stored in redis.`;
   }
+
+  @Get('visits')
+  async countVisits(): Promise<string> {
+    return await this.appService.countVisits();
+  }
 }

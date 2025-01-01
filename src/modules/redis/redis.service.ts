@@ -37,4 +37,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async setWithExpiry(prefix: string, key: string, value: string, expiry: number): Promise<void> {
     await this.redisClient.set(`${prefix}:${key}`, value, 'EX', expiry);
   }
+
+  async increment(prefix: string, key: string): Promise<number> {
+    return await this.redisClient.incrby(`${prefix}:${key}`, 1);
+  }
 }

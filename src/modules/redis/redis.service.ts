@@ -4,16 +4,14 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private redisClient: Redis;
+  public redisClient: Redis;
 
-  constructor(
-    private readonly configService: ConfigService
-  ) { }
+  constructor(private readonly configService: ConfigService) {}
 
   onModuleInit() {
     this.redisClient = new Redis({
-      host: this.configService.get('QUEUE_HOST'),
-      port: this.configService.get('QUEUE_PORT'),
+      host: this.configService.get('REDIS_HOST'),
+      port: this.configService.get('REDIS_PORT'),
     });
   }
 
@@ -21,24 +19,50 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.redisClient.disconnect();
   }
 
-  // Prefix used to create folder like structure when accessing the Redis store
-  async get(prefix: string, key: string): Promise<string | null> {
-    return await this.redisClient.get(`${prefix}:${key}`);
+  async get(key: string): Promise<string | null> {
+    return await this.redisClient.get(key);
   }
 
-  async set(prefix: string, key: string, value: string): Promise<void> {
-    await this.redisClient.set(`${prefix}:${key}`, value);
+  async set(key: string, value: string): Promise<void> {
+    await this.redisClient.set(key, value);
+  }
+  async delete(key: string): Promise<void> {
+    await this.redisClient.del(key);
   }
 
-  async delete(prefix: string, key: string): Promise<void> {
-    await this.redisClient.del(`${prefix}:${key}`);
+  async setWithExpiry(
+    key: string,
+    value: string,
+    expiryInSeconds: number,
+  ): Promise<void> {
+    await this.redisClient.set(key, value, 'EX', expiryInSeconds);
   }
 
-  async setWithExpiry(prefix: string, key: string, value: string, expiry: number): Promise<void> {
-    await this.redisClient.set(`${prefix}:${key}`, value, 'EX', expiry);
+  async increment(key: string, incrementBy = 1): Promise<number> {
+    return await this.redisClient.incrby(key, incrementBy);
   }
 
-  async increment(prefix: string, key: string): Promise<number> {
-    return await this.redisClient.incrby(`${prefix}:${key}`, 1);
+  async setMany(data: { key: string; value: string }[]) {
+    const pipeline = this.redisClient.pipeline();
+
+    for (const { key, value } of data) {
+      pipeline.set(key, value);
+    }
+
+    await pipeline.exec();
+  }
+
+  async setManyWithExpiry(data: { key: string; value: string; ttl: number }[]) {
+    const pipeline = this.redisClient.pipeline();
+
+    for (const { key, value, ttl } of data) {
+      pipeline.set(key, value, 'EX', ttl);
+    }
+
+    await pipeline.exec();
+  }
+
+  async deleteMany(keys: string[]): Promise<void> {
+    await this.redisClient.del(keys);
   }
 }

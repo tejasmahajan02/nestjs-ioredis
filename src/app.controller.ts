@@ -5,13 +5,12 @@ import { RedisPrefix } from './modules/redis/enums/redis-prefix.enum';
 
 @Controller()
 export class AppController {
-
   private uniqueId = 0;
 
   constructor(
     private readonly appService: AppService,
     private readonly redisService: RedisService,
-  ) { }
+  ) {}
 
   @Get()
   getHello(): string {
@@ -21,9 +20,12 @@ export class AppController {
   @Get('product')
   async setProduct(
     @Query('key') key: string,
-    @Query('value') value: string
+    @Query('value') value: string,
   ): Promise<string> {
-    await this.redisService.set(RedisPrefix.PRODUCT, `${key}:${this.uniqueId++}`, value);
+    await this.redisService.set(
+      `${RedisPrefix.PRODUCT}:${this.uniqueId++}`,
+      value,
+    );
     return `${key}:${value} stored in redis.`;
   }
 
